@@ -7,6 +7,8 @@ import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 
+import time
+
 
 ###### CONSTANTS        ##########################################################
 TOKEN_FILE = '.bot_ross.token'
@@ -26,6 +28,8 @@ class Bot(commands.Bot):
     
     # error handling
     async def on_command_error(self, ctx, error) -> None:
+        print('ERROR WTF')
+        print(error)
         await ctx.reply(error, ephemeral=True)
 
 bot = Bot()
@@ -42,25 +46,31 @@ async def on_ready():
 
 
 ###### COMMANDS        #######################################################
-### /draw
-@bot.hybrid_command(name='draw', description='Commission the bot to draw something for you')
+### /commission
+@bot.hybrid_command(name='commission', description='Commission the bot to draw something for you')
 @app_commands.describe(prompt = '🖌️ What do you want the bot to draw for you?')
-async def draw(ctx, prompt:str):
+@app_commands.guilds(discord.Object(id=349267379991347200))
+async def commission(ctx, prompt:str):
     # removing trailing white spaces
     prompt = prompt.strip()
 
     # console logging
     print(f'>>> User {ctx.author} requesting commission: {prompt}')
 
-    # error handling
-    if not prompt:
-        raise ValueError('Prompt cannot be empty')
+    # # error handling
+    # if not prompt:
+    #     raise ValueError('Prompt cannot be empty')
     
     # generating an image using the Stable Diffusion API
-    generated_img = art_generator.generate_img(prompt)
+    await ctx.reply(f'*drawing {prompt}...*')
+    img = art_generator.generate_img(prompt, save_to_disk=False)
+    
+    # we need this here otherwise l get errors for some reason :(
+    time.sleep(3)
 
-    # Sending an image as a bytes object from memory as "weather_report.png"
-    await ctx.send(file=discord.File(generated_img, f'{prompt}.png'))
+    # sending the image from memory
+    img.seek(0)
+    await ctx.send(file=discord.File(img, f'{prompt}.png'))
 
     print(f'>>> {ctx.author}\'s commission sent!')
 
